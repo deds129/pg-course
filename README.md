@@ -1,7 +1,8 @@
 # pg-course
 
 
-Example with join-s
+### Lesson #3
+Example of join-s
 
 ```sql
 select
@@ -16,8 +17,8 @@ where cli.id IN (1,2,3)
 ```
 
 
-
-Example triggers
+### Lesson #5
+Example of triggers
 
 ```sql
 alter table users add name text;
@@ -46,7 +47,7 @@ CREATE TRIGGER "update_users_name_on_insert_trigger"
 update users set name = CONCAT(first_name, ' ', last_name);
 ```
 
-
+### Lesson #6
 Example plpgsql function
 ```sql
 create or replace function get_user_clients(_user_id integer) returns TABLE(client_id integer)
@@ -62,8 +63,10 @@ $$;
 ```
 
 
-
+### Lesson #7
 Example insert generated rows
+Data to show query optimization techniques
+
 ```sql
 alter table client
 	add active bool default true;
@@ -80,6 +83,9 @@ select 2, id from client where id >= 10 and id < 1000000;
 insert into user_client_link (user_id, client_id)
 select 3, id from client where id > 1000000;
 
+-- query with big amout of result rows (non-optimized)
+
+select count(1) from client;
 
 select
     usr.id,
@@ -89,9 +95,9 @@ left join user_client_link as ucl on ucl.user_id = usr.id
 left join client as cli ON cli.id = ucl.client_id
 where cli.active
 group by 1
-order by 2 desc
+order by 2 desc;
 
-
+-- add indexes
 create index user_client_link_client_id_index
 	on user_client_link (client_id);
 
@@ -99,8 +105,9 @@ create index user_client_link_user_id_index
 	on user_client_link (user_id);
 
 	analyse user_client_link;
+	analyze client;
 
-
+-- optimize query
 select
     usr.id,
 	count(distinct cli.id) as client_cnt
@@ -110,9 +117,9 @@ left join client as cli ON cli.id = ucl.client_id
 where cli.active
 and usr.id = 1
 group by 1
-order by 2 desc
+order by 2 desc;
 
-
+-- use join inner select
 select
     usr.id,
 	stat.client_cnt
@@ -124,22 +131,16 @@ left join lateral (
 	left join client as cli ON cli.id = ucl.client_id
 	where ucl.user_id = usr.id and cli.active
 ) stat on true
-order by 2 desc
+order by 2 desc;
 
-
-
-
-
-
-
+--  use index-only scans and covering indexes
 create index client_id_active_index
 	on client (active) INCLUDE (id);
-
+-- use multicolumn Indexes
 create index user_client_link_client_id_user_id_index
 	on user_client_link (client_id, user_id);
 
-
-
+-- use CTE
 with stat as (
 	select 
 		ucl.user_id,
@@ -154,7 +155,7 @@ select
 	stat.client_cnt
 from users as usr
 left join stat on stat.user_id=usr.id
-order by 2 desc
+order by 2 desc;
 
 
 
@@ -168,8 +169,8 @@ group by 1
 
 ```
 
-
-## Window functions
+### Lesson #8
+Window functions
 
 ```sql
 create table transaction
@@ -241,7 +242,7 @@ from (
         t.id as transaction_id
     from transaction as t
     left join client as c ON c.id = t.client_id
-) prep
+) prep;
 
 -- для пагинации
 select
@@ -252,7 +253,7 @@ select
     count(1) OVER() as total_rows
 from transaction as t
 left join client as c ON c.id = t.client_id
-limit 10 offset 0
+limit 10 offset 0;
 
 
 -- row_number
@@ -265,7 +266,7 @@ select
     count(1) OVER() as total_rows
 from transaction as t
 left join client as c ON c.id = t.client_id
-limit 10 offset 10
+limit 10 offset 10;
 
 
 -- нарастающий итог

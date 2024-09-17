@@ -15,7 +15,7 @@ services:
       - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
       - ./postgresql.conf:/postgresql.conf
     ports:
-      - '5432:5432'
+      - '5436:5432'
     logging:
       options:
         max-size: '50m'
